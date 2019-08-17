@@ -70,7 +70,16 @@ namespace Tensorflow
             if (ndim < 0 || other.ndim < 0)
                 return new TensorShape();
             else
-                return new TensorShape(ndim + other.ndim);
+            {
+                var concatenate_dims = new int[ndim + other.ndim];
+                for (int i = 0; i < ndim; i++)
+                    concatenate_dims[i] = dims[i];
+
+                for (int i = 0; i < other.ndim; i++)
+                    concatenate_dims[ndim + i] = other.dims[i];
+
+                return new TensorShape(concatenate_dims);
+            }
         }
 
         public static implicit operator TensorShape(Shape shape) => new TensorShape(shape.Dimensions);

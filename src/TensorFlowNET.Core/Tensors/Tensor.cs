@@ -392,6 +392,10 @@ namespace Tensorflow
             return $"tf.Tensor '{name}' shape=({string.Join(",", shape)}) dtype={dtype}";
         }
 
+        protected override void DisposeManagedState()
+        {
+        }
+
         protected override void DisposeUnManagedState(IntPtr handle)
         {
             if(handle != IntPtr.Zero)
@@ -411,5 +415,6 @@ namespace Tensorflow
             }
         }
 
+        public int tensor_int_val { get; set; }
     }
 }
