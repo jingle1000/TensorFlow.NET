@@ -143,7 +143,7 @@ namespace TensorFlowNET.Examples
             var counts = np.zeros((k, num_classes), np.float32);
 
             sw.Start();
-            foreach (var i in range(idx.Length))
+            foreach (var i in range(idx.Count))
             {
                 var x = mnist.Train.Labels[i];
                 counts[idx[i]] += x;

@@ -57,7 +57,7 @@ namespace Tensorflow
             _final_fetches = _fetches;
         }
 
-        public NDArray build_results(BaseSession session, NDArray[] tensor_values)
+        public NDArray[] build_results(BaseSession session, NDArray[] tensor_values)
         {
             var full_values = new List<NDArray>();
             if (_final_fetches.Count != tensor_values.Length)
@@ -82,6 +82,9 @@ namespace Tensorflow
                             case "String":
                                 full_values.Add(float.NaN);
                                 break;
+                            case "Char":
+                                full_values.Add(float.NaN);
+                                break;
                             default:
                                 throw new NotImplementedException($"build_results tensor_values[0] {tensor_values[0].dtype.Name}");
                         }
@@ -99,21 +102,26 @@ namespace Tensorflow
                     {
                         switch (value.dtype.Name)
                         {
+                            case "Int16":
+                                full_values.Add(value.GetValue<short>(0));
+                                break;
                             case "Int32":
-                                full_values.Add(value.Data<int>(0));
+                                full_values.Add(value.GetValue<int>(0));
                                 break;
                             case "Int64":
-                                full_values.Add(value.Data<long>(0));
+                                full_values.Add(value.GetValue<long>(0));
                                 break;
                             case "Single":
-                                full_values.Add(value.Data<float>(0));
+                                full_values.Add(value.GetValue<float>(0));
                                 break;
                             case "Double":
-                                full_values.Add(value.Data<double>(0));
+                                full_values.Add(value.GetValue<double>(0));
                                 break;
-                            case "String":
-                                full_values.Add(value.Data<string>(0));
-                                break;
+                            /*case "String":
+                                full_values.Add(value.Data<byte>()[0]);
+                                break;*/
+                            default:
+                                throw new NotImplementedException($"build_results tensor_values[0] {tensor_values[0].dtype.Name}");
                         }
                     }
                     else

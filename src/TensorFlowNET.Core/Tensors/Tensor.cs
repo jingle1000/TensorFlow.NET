@@ -105,9 +105,9 @@ namespace Tensorflow
 
         public TensorShape TensorShape => tensor_util.to_shape(shape);
 
-        public void SetShape(Shape shape)
+        public void SetShape(TensorShape shape)
         {
-            this.shape = shape.Dimensions;
+            this.shape = shape.dims;
         }
 
         public void set_shape(Tensor shape)
@@ -194,7 +194,7 @@ namespace Tensorflow
             // [offset1, offset2,...,offsetn, s1size, s1bytes, s2size, s2bytes,...,snsize,snbytes]
             //
             long size = 1;
-            foreach (var s in TensorShape.Dimensions)
+            foreach (var s in TensorShape.dims)
                 size *= s;
 
             var buffer = new byte[size][];
@@ -394,9 +394,8 @@ namespace Tensorflow
 
         protected override void DisposeManagedState()
         {
-            if (gcHandle.IsAllocated)
-                gcHandle.Free();
         }
+
         protected override void DisposeUnManagedState(IntPtr handle)
         {
             if(handle != IntPtr.Zero)

@@ -21,6 +21,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using NumSharp.Backends.Unmanaged;
 using static Tensorflow.c_api;
 
 namespace Tensorflow
@@ -484,9 +485,10 @@ namespace Tensorflow
 
         public unsafe Tensor(NDArray nd, TF_DataType? tensorDType = null)
         {
+            // todo: handle nd of type "String" here too
             if (tensorDType == TF_DataType.TF_STRING && nd.dtype.Name == "Byte")
             {
-                var buffer = nd.Data<byte>();
+                var buffer = nd.ToArray<byte>();
                 var size = c_api.TF_StringEncodedSize((UIntPtr)buffer.Length);
                 var handle = TF_AllocateTensor(TF_DataType.TF_STRING, IntPtr.Zero, 0, (UIntPtr)((ulong)size + 8));
 
@@ -502,117 +504,33 @@ namespace Tensorflow
                 IsMemoryOwner = false;
                 return;
             }
-            _handle = Allocate(nd, tensorDType: tensorDType);
+            _handle = CreateTensorFromNDArray(nd, tensorDType);
             IsMemoryOwner = true;
         }
 
-        private unsafe IntPtr AllocateWithMemoryCopy(NDArray nd, TF_DataType? tensorDType = null)
+        private unsafe IntPtr CreateTensorFromNDArray(NDArray nd, TF_DataType? given_dtype)
         {
-            IntPtr dotHandle = IntPtr.Zero;
-            int buffersize = 0;
-
-            if (nd.dtype.Name != "String")
+            if (nd.dtype.Name == "String")
+                throw new NotImplementedException("Support for NDArray of type string not implemented yet");
+            IArraySlice arraySlice;
+            var shape = nd.Unsafe.Storage.Shape;
+            if (shape.IsSliced || shape.IsBroadcasted)
             {
-                buffersize = (nd.size * nd.dtypesize);
-                dotHandle = Marshal.AllocHGlobal(buffersize);
+                // the memory is NOT contiguous, so we have to copy the view into a contiguous memory block.
+                arraySlice = nd.CloneData();
             }
-
-            var dataType = ToTFDataType(nd.dtype);
-            // shape
-            var dims = nd.shape.Select(x => (long)x).ToArray();
-            // var nd1 = nd.ravel();
-            switch (nd.dtype.Name)
+            else
             {
-                case "Boolean":
-                    var boolVals = Array.ConvertAll(nd.Data<bool>(), x => Convert.ToByte(x));
-                    Marshal.Copy(boolVals, 0, dotHandle, nd.size);
-                    break;
-                case "Int16":
-                    Marshal.Copy(nd.Data<short>(), 0, dotHandle, nd.size);
-                    break;
-                case "Int32":
-                    Marshal.Copy(nd.Data<int>(), 0, dotHandle, nd.size);
-                    break;
-                case "Int64":
-                    Marshal.Copy(nd.Data<long>(), 0, dotHandle, nd.size);
-                    break;
-                case "Single":
-                    Marshal.Copy(nd.Data<float>(), 0, dotHandle, nd.size);
-                    break;
-                case "Double":
-                    Marshal.Copy(nd.Data<double>(), 0, dotHandle, nd.size);
-                    break;
-                case "Byte":
-                    Marshal.Copy(nd.Data<byte>(), 0, dotHandle, nd.size);
-                    break;
-                case "String":
-                    return new Tensor(UTF8Encoding.UTF8.GetBytes(nd.Data<string>(0)), TF_DataType.TF_STRING);
-                default:
-                    throw new NotImplementedException($"Marshal.Copy failed for {nd.dtype.Name}.");
+                // the memory is contiguous
+                arraySlice = nd.GetData();
             }
-            var tfHandle = c_api.TF_NewTensor(dataType,
-                dims,
-                dims.Length,
-                dotHandle,
-                (UIntPtr)buffersize,
-                _hGlobalDeallocator,
-                ref _deallocatorArgs);
-
-            return tfHandle;
-        }
-
-        private GCHandle gcHandle;
-        private IntPtr NewTensor<T>(T[] array, TF_DataType dataType, long[] dims, int len, int element_size)
-        {
-            gcHandle = GCHandle.Alloc(array, GCHandleType.Pinned);
-            IntPtr p = gcHandle.AddrOfPinnedObject();
-            return c_api.TF_NewTensor(dataType,
-                dims,
-                dims.Length,
-                p,
-                (UIntPtr)(len * element_size),
-                _nothingDeallocator,
-                ref _deallocatorArgs);
-            // free gcHandle at DisposeManagedState(), free here causes random crash
-            // TF_NewTensor already copied data into native, still don't know why we can't free immediately.
-        }
-
-        private unsafe IntPtr Allocate(NDArray nd, TF_DataType? tensorDType = null)
-        {
-            IntPtr tfHandle = IntPtr.Zero;
-            var dataType = ToTFDataType(nd.dtype);
-            // shape
-            var dims = nd.shape.Select(x => (long)x).ToArray();
-            switch (nd.dtype.Name)
-            {
-                case "Boolean":
-                    tfHandle = NewTensor(nd.Data<bool>(), dataType, dims, nd.size, nd.dtypesize);
-                    break;
-                case "Int16":
-                    tfHandle = NewTensor(nd.Data<short>(), dataType, dims, nd.size, nd.dtypesize);
-                    break;
-                case "Int32":
-                    tfHandle = NewTensor(nd.Data<int>(), dataType, dims, nd.size, nd.dtypesize);
-                    break;
-                case "Int64":
-                    tfHandle = NewTensor(nd.Data<long>(), dataType, dims, nd.size, nd.dtypesize);
-                    break;
-                case "Single":
-                    tfHandle = NewTensor(nd.Data<float>(), dataType, dims, nd.size, nd.dtypesize);
-                    break;
-                case "Double":
-                    tfHandle = NewTensor(nd.Data<double>(), dataType, dims, nd.size, nd.dtypesize);
-                    break;
-                case "Byte":
-                    tfHandle = NewTensor(nd.Data<byte>(), dataType, dims, nd.size, nd.dtypesize);
-                    break;
-                case "String":
-                    return new Tensor(UTF8Encoding.UTF8.GetBytes(nd.Data<string>(0)), TF_DataType.TF_STRING);
-                default:
-                    throw new NotImplementedException($"Marshal.Copy failed for {nd.dtype.Name}.");
-            }
-
-            return tfHandle;
+            this.Tag = arraySlice; // keep a reference to the memory block to make sure it is not disposed while TF is using it
+            var ptr = new IntPtr(arraySlice.Address);
+            int num_bytes = (nd.size * nd.dtypesize);
+            var dtype = given_dtype ?? ToTFDataType(nd.dtype);
+            var handle = TF_NewTensor(dtype, dims: nd.shape.Select(i=>(long)i).ToArray(), num_dims: nd.ndim, data: ptr, len: (UIntPtr)num_bytes, deallocator: _nothingDeallocator, ref _deallocatorArgs);
+            IsMemoryOwner = false;
+            return handle;
         }
 
         public unsafe Tensor(byte[][] buffer, long[] shape)
@@ -726,7 +644,8 @@ namespace Tensorflow
         {
             if (args.deallocator_called)
                 return;
-            Marshal.FreeHGlobal(dataPtr);
+            // NumSharp will dispose
+            // Marshal.FreeHGlobal(dataPtr);
             args.deallocator_called = true;
         }
 

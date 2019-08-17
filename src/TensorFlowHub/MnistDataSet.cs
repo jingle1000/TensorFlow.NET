@@ -21,7 +21,7 @@ namespace Tensorflow.Hub
             NumOfExamples = images.shape[0];
 
             images = images.reshape(images.shape[0], images.shape[1] * images.shape[2]);
-            images.astype(dataType);
+            images = images.astype(dataType);
             // for debug np.multiply performance
             var sw = new Stopwatch();
             sw.Start();
@@ -30,7 +30,7 @@ namespace Tensorflow.Hub
             Console.WriteLine($"{sw.ElapsedMilliseconds}ms");
             Data = images;
 
-            labels.astype(dataType);
+            labels = labels.astype(dataType);
             Labels = labels;
         }
 

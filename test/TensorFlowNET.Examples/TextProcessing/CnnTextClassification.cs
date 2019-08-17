@@ -149,8 +149,8 @@ namespace TensorFlowNET.Examples
             Console.WriteLine("\tDONE ");
 
             var (train_x, valid_x, train_y, valid_y) = train_test_split(x, y, test_size: 0.15f);
-            Console.WriteLine("Training set size: " + train_x.len);
-            Console.WriteLine("Test set size: " + valid_x.len);
+            Console.WriteLine("Training set size: " + train_x.shape[0]);
+            Console.WriteLine("Test set size: " + valid_x.shape[0]);
         }
 
         public Graph ImportGraph()
@@ -244,7 +244,7 @@ namespace TensorFlowNET.Examples
                             [is_training] = false
                         };
                         var result1 = sess.run(accuracy, valid_feed_dict);
-                        float accuracy_value = result1;
+                        float accuracy_value = result1[0];
                         sum_accuracy += accuracy_value;
                         cnt += 1;
                     }

@@ -212,7 +212,7 @@ namespace Tensorflow
                             if (values.GetType().IsArray)
                                 nparray = np.array((string[])values, np_dt);
                             else
-                                nparray = Convert.ToString(values);
+                                nparray = NDArray.FromString(Convert.ToString(values));
                             break;
                         case "Boolean":
                             if (values.GetType().IsArray)
@@ -226,7 +226,7 @@ namespace Tensorflow
                 }
             }
 
-            var numpy_dtype = dtypes.as_dtype(nparray.dtype);
+            var numpy_dtype = dtypes.as_dtype(nparray.dtype, dtype: dtype);
             if (numpy_dtype == TF_DataType.DtInvalid)
                 throw new TypeError($"Unrecognized data type: {nparray.dtype}");
 
@@ -247,7 +247,7 @@ namespace Tensorflow
             }
             else
             {
-                shape_size = new TensorShape(shape).Size;
+                shape_size = new TensorShape(shape).size;
                 is_same_size = shape_size == nparray.size;
             }
 
@@ -267,7 +267,10 @@ namespace Tensorflow
             if (numpy_dtype == TF_DataType.TF_STRING && !(values is NDArray))
             {
                 if (values is string str)
+                {
                     tensor_proto.StringVal.Add(Google.Protobuf.ByteString.CopyFromUtf8(str));
+                    tensor_proto.TensorShape = tensor_util.as_shape(new int[0]);
+                }
                 else if (values is string[] str_values)
                     tensor_proto.StringVal.AddRange(str_values.Select(x => Google.Protobuf.ByteString.CopyFromUtf8(x)));
                 else if(values is byte[] byte_values)
@@ -296,9 +299,9 @@ namespace Tensorflow
                 case "Double":
                     tensor_proto.DoubleVal.AddRange(proto_values.Data<double>());
                     break;
-                case "String":
+                /*case "String":
                     tensor_proto.StringVal.AddRange(proto_values.Data<string>().Select(x => Google.Protobuf.ByteString.CopyFromUtf8(x.ToString())));
-                    break;
+                    break;*/
                 default:
                     throw new Exception("make_tensor_proto Not Implemented");
             }
@@ -387,10 +390,10 @@ namespace Tensorflow
         {
             TensorShapeProto shape = new TensorShapeProto();
 
-            for (int i = 0; i < tshape.NDim; i++)
+            for (int i = 0; i < tshape.ndim; i++)
             {
                 var dim = new TensorShapeProto.Types.Dim();
-                dim.Size = tshape.Dimensions[i];
+                dim.Size = tshape.dims[i];
                 //dim.Name = $"dim_{i}";
 
                 shape.Dim.Add(dim);
