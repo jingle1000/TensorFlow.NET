@@ -38,14 +38,22 @@ namespace Tensorflow.Operations.Initializers
             this.dtype = dtype;
         }
 
-        public Tensor call(TensorShape shape, TF_DataType dtype = TF_DataType.DtInvalid)
+        public Tensor call(TensorShape shape, TF_DataType dtype = TF_DataType.DtInvalid, bool? verify_shape = null)
         {
-            throw new NotImplementedException();
+            if (dtype == TF_DataType.DtInvalid)
+                dtype = this.dtype;
+            return random_ops.random_normal(shape, mean, stddev, dtype, seed: seed);
         }
 
         public object get_config()
         {
-            throw new NotImplementedException();
+            return new
+            {
+                mean,
+                stddev,
+                seed,
+                dtype
+            };
         }
     }
 }

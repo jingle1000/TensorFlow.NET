@@ -29,7 +29,7 @@ namespace TensorFlowNET.UnitTest
         }
 
         /// <summary>
-        /// https://www.tf.org/api_docs/python/tf/variable_scope
+        /// https://www.tensorflow.org/api_docs/python/tf/variable_scope
         /// how to create a new variable
         /// </summary>
         [TestMethod]
@@ -119,7 +119,7 @@ namespace TensorFlowNET.UnitTest
             {
                 sess.run(init_op);
                 // o some work with the model.
-                inc_v1.op.run();
+                inc_v1.op.run(session: sess);
             }
         }
 

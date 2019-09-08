@@ -143,6 +143,28 @@ namespace Tensorflow
             }
         }
 
+        public TensorShape merge_with(TensorShape other)
+        {
+            if (dims.Length == 0)
+                return other;
+
+            throw new NotImplementedException("merge_with");
+        }
+
+        /// <summary>
+        ///     Returns a cloned array from <see cref="dims"/>.
+        /// </summary>
+        public int[] as_list() {
+            if (shape.IsEmpty)
+                throw new ValueError("as_list() is not defined on an unknown TensorShape.");
+            return (int[]) dims.Clone();
+        }
+
+        public override string ToString()
+        {
+            return shape.ToString();
+        }
+
         public static implicit operator TensorShape(Shape shape) => new TensorShape((int[]) shape.Dimensions.Clone());
         public static implicit operator Shape(TensorShape shape) => new Shape((int[]) shape.dims.Clone());
         
@@ -150,7 +172,7 @@ namespace Tensorflow
         public static implicit operator TensorShape(int[] dims) => new TensorShape(dims);
 
         public static explicit operator int(TensorShape shape) => shape.size;
-        public static explicit operator TensorShape(int dim) => new TensorShape(dim);
+        public static implicit operator TensorShape(int dim) => new TensorShape(dim);
 
         public static explicit operator (int, int)(TensorShape shape) => shape.dims.Length == 2 ? (shape.dims[0], shape.dims[1]) : (0, 0);
         public static implicit operator TensorShape((int, int) dims) => new TensorShape(dims.Item1, dims.Item2);

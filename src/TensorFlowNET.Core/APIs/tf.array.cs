@@ -23,6 +23,11 @@ namespace Tensorflow
     public partial class tensorflow
     {
         /// <summary>
+        /// A convenient alias for None, useful for indexing arrays.
+        /// </summary>
+        public string newaxis = "";
+
+        /// <summary>
         /// Concatenates tensors along one dimension.
         /// </summary>
         /// <param name="values">A list of `Tensor` objects or a single `Tensor`.</param>
@@ -100,6 +105,18 @@ namespace Tensorflow
             string name = null) => array_ops.one_hot(indices, depth, dtype: dtype, axis: axis, name: name);
 
         /// <summary>
+        /// Pads a tensor
+        /// </summary>
+        /// <param name="tensor"></param>
+        /// <param name="paddings"></param>
+        /// <param name="mode"></param>
+        /// <param name="name"></param>
+        /// <param name="constant_values"></param>
+        /// <returns></returns>
+        public Tensor pad(Tensor tensor, Tensor paddings, string mode = "CONSTANT", string name = null, int constant_values = 0)
+            => array_ops.pad(tensor, paddings, mode: mode, name: name, constant_values: constant_values);
+
+        /// <summary>
         /// A placeholder op that passes through `input` when its output is not fed.
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -112,5 +129,15 @@ namespace Tensorflow
         /// <returns>A `Tensor`. Has the same type as `input`.</returns>
         public Tensor placeholder_with_default<T>(T input, int[] shape, string name = null)
             => gen_array_ops.placeholder_with_default(input, shape, name: name);
+
+        /// <summary>
+        /// Returns the shape of a tensor.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="name"></param>
+        /// <param name="out_type"></param>
+        /// <returns></returns>
+        public Tensor shape(Tensor input, string name = null, TF_DataType out_type = TF_DataType.TF_INT32)
+            => array_ops.shape_internal(input, name, optimize: true, out_type: out_type);
     }
 }

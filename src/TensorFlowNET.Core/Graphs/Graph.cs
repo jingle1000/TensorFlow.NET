@@ -242,7 +242,7 @@ namespace Tensorflow
                 throw new RuntimeError("Graph is finalized and cannot be modified.");
         }
 
-        public unsafe Operation create_op(string op_type, Tensor[] inputs, TF_DataType[] dtypes,
+        public Operation create_op(string op_type, Tensor[] inputs, TF_DataType[] dtypes,
             TF_DataType[] input_types = null, string name = null,
             Dictionary<string, AttrValue> attrs = null, OpDef op_def = null)
         {
@@ -399,13 +399,13 @@ namespace Tensorflow
             int num_return_outputs = 0;
             c_api.TF_ImportGraphDefResultsReturnOutputs(results, ref num_return_outputs, ref return_output_handle);
             TF_Output[] return_outputs = new TF_Output[num_return_outputs];
-            for (int i = 0; i < num_return_outputs; i++)
+            unsafe
             {
-                var handle = return_output_handle + (Marshal.SizeOf<TF_Output>() * i);
-                return_outputs[i] = Marshal.PtrToStructure<TF_Output>(handle);
+                var tf_output_ptr = (TF_Output*) return_output_handle;
+                for (int i = 0; i < num_return_outputs; i++) 
+                    return_outputs[i] = *(tf_output_ptr + i);
+                return return_outputs;
             }
-
-            return return_outputs;
         }
 
         public string[] get_all_collection_keys()
@@ -420,7 +420,20 @@ namespace Tensorflow
 
         public List<T> get_collection<T>(string name, string scope = null)
         {
-            return _collections.ContainsKey(name) ? _collections[name] as List<T> : new List<T>();
+            List<T> t = default;
+            var collection = _collections.ContainsKey(name) ? _collections[name] : new List<T>();
+            switch (collection)
+            {
+                case List<VariableV1> list:
+                    t = list.Select(x => (T)(object)x).ToList();
+                    break;
+                case List<RefVariable> list:
+                    t = list.Select(x => (T)(object)x).ToList();
+                    break;
+                default:
+                    throw new NotImplementedException($"get_collection<{typeof(T).FullName}>");
+            }
+            return t;
         }
 
         public object get_collection_ref(string name)
@@ -497,10 +510,8 @@ namespace Tensorflow
         IEnumerator<Operation> IEnumerable<Operation>.GetEnumerator()
             => GetEnumerable().GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            throw new NotImplementedException();
-        }
+        IEnumerator IEnumerable.GetEnumerator() 
+            => throw new NotImplementedException();
 
         public static implicit operator IntPtr(Graph graph)
         {

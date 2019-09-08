@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Tensorflow;
 using TensorFlowNET.Examples.Utility;
 using static Tensorflow.Binding;
@@ -32,7 +33,7 @@ namespace TensorFlowNET.Examples
     /// and simply train a new classification layer on top. Transfer learning is a technique that shortcuts much of this 
     /// by taking a piece of a model that has already been trained on a related task and reusing it in a new model.
     /// 
-    /// https://www.tf.org/hub/tutorials/image_retraining
+    /// https://www.tensorflow.org/hub/tutorials/image_retraining
     /// </summary>
     public class RetrainImageClassifier : IExample
     {
@@ -167,7 +168,7 @@ namespace TensorFlowNET.Examples
         /// weights, and then sets up all the gradients for the backward pass.
         /// 
         /// The set up for the softmax and fully-connected layers is based on:
-        /// https://www.tf.org/tutorials/mnist/beginners/index.html
+        /// https://www.tensorflow.org/tutorials/mnist/beginners/index.html
         /// </summary>
         /// <param name="class_count"></param>
         /// <param name="final_tensor_name"></param>
@@ -381,10 +382,15 @@ namespace TensorFlowNET.Examples
             Tensor resized_input_tensor, Tensor bottleneck_tensor, string module_name)
         {
             int how_many_bottlenecks = 0;
-            foreach (var (label_name, label_lists) in image_lists)
+            var kvs = image_lists.ToArray();
+            var categories = new string[] {"training", "testing", "validation"};
+            Parallel.For(0, kvs.Length, i =>
             {
-                foreach (var category in new string[] { "training", "testing", "validation" })
+                var (label_name, label_lists) = kvs[i];
+
+                Parallel.For(0, categories.Length, j =>
                 {
+                    var category = categories[j];
                     var category_list = label_lists[category];
                     foreach (var (index, unused_base_name) in enumerate(category_list))
                     {
@@ -395,8 +401,8 @@ namespace TensorFlowNET.Examples
                         if (how_many_bottlenecks % 300 == 0)
                             print($"{how_many_bottlenecks} bottleneck files created.");
                     }
-                }
-            }
+                });
+            });
         }
 
         private float[] get_or_create_bottleneck(Session sess, Dictionary<string, Dictionary<string, string[]>> image_lists,
@@ -508,7 +514,7 @@ namespace TensorFlowNET.Examples
         {
             // get a set of images to teach the network about the new classes
             string fileName = "flower_photos.tgz";
-            string url = $"http://download.tf.org/example_images/{fileName}";
+            string url = $"http://download.tensorflow.org/example_images/{fileName}";
             Web.Download(url, data_dir, fileName);
             Compress.ExtractTGZ(Path.Join(data_dir, fileName), data_dir);
 

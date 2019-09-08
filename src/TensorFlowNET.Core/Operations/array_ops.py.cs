@@ -260,8 +260,7 @@ namespace Tensorflow
             return tf_with(ops.name_scope(name, "ones", new { dims }), scope =>
             {
                 name = scope;
-                var shape = ops.convert_to_tensor(dims, dtype: TF_DataType.TF_INT32);
-                var output = gen_array_ops.fill(shape, constant_op.constant(1.0f, dtype: dtype), name: name);
+                var output = _constant_if_small(1, dims, dtype, name);
                 return output;
             });
         }
@@ -339,7 +338,7 @@ namespace Tensorflow
         public static Tensor size(Tensor input, string name = null, bool optimize = true, TF_DataType out_type = TF_DataType.TF_INT32)
             => size_internal(input, name, optimize: optimize, out_type: out_type);
 
-        private static Tensor shape_internal(Tensor input, string name = null, bool optimize = true, TF_DataType out_type = TF_DataType.TF_INT32)
+        public static Tensor shape_internal(Tensor input, string name = null, bool optimize = true, TF_DataType out_type = TF_DataType.TF_INT32)
         {
             return tf_with(ops.name_scope(name, "Shape", new { input }), scope =>
             {
@@ -551,6 +550,40 @@ namespace Tensorflow
                 return ops.convert_to_tensor(values, name: name);
 
             throw new NotImplementedException("array_ops.stack");
+        }
+
+        public static Tensor pad(Tensor tensor, Tensor paddings, string mode = "CONSTANT", string name = null, int constant_values = 0)
+        {
+            Tensor result = null;
+            mode = mode.ToUpper();
+            if(mode == "CONSTANT")
+            {
+                if (constant_values != 0)
+                    throw new NotImplementedException("gen_array_ops.pad_v2");
+                else
+                    result = gen_array_ops.pad(tensor, paddings, name: name);
+            }
+
+            // Restore shape information where possible.
+            var paddings_constant = tensor_util.constant_value(
+                result.op.inputs[1], partial: true);
+            var input_shape = result.op.inputs[0].TensorShape;
+            if (input_shape.ndim > -1 &&
+                !result.TensorShape.is_fully_defined() &&
+                !(paddings_constant is null))
+            {
+                var new_shape = new List<int>();
+                foreach((NDArray padding, int dim) in zip(paddings_constant.GetNDArrays(), np.array(input_shape.dims).GetNDArrays()))
+                {
+                    if (padding is null || dim == -1 || padding.GetData<int>().Contains(-1))
+                        new_shape.Add(-1);
+                    else
+                        new_shape.Add(np.sum(padding) + dim);
+                }
+                result.set_shape(new_shape.ToArray());
+            }
+
+            return result;
         }
 
         public static Tensor placeholder(TF_DataType dtype)

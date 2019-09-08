@@ -28,7 +28,6 @@ using NumSharp.Backends;
 using NumSharp.Backends.Unmanaged;
 using NumSharp.Utilities;
 using Tensorflow.Framework;
-using static Tensorflow.Binding;
 
 namespace Tensorflow
 {
@@ -126,6 +125,8 @@ namespace Tensorflow
                     c_api.TF_GraphSetTensorShape(this.graph, this._as_tf_output(), null, -1, status);
                 else
                     c_api.TF_GraphSetTensorShape(this.graph, this._as_tf_output(), value.Select(Convert.ToInt64).ToArray(), value.Length, status);
+
+                status.Check(true);
             }
         }
 
@@ -221,15 +222,6 @@ namespace Tensorflow
         /// <exception cref="ArgumentException">When <typeparam name="T"> is string </typeparam></exception>
         public T[] ToArray<T>() where T : unmanaged
         {
-            //when T is string
-            if (typeof(T) == typeof(string))
-            {
-                if (dtype != TF_DataType.TF_STRING)
-                    throw new ArgumentException($"Given <{typeof(T).Name}> can't be converted to string.");
-
-                return (T[]) (object) StringData();
-            }
-
             //Are the types matching?
             if (typeof(T).as_dtype() == dtype)
             {
@@ -246,20 +238,12 @@ namespace Tensorflow
                 unsafe
                 {
                     var len = (long) size;
-                    fixed (T* dstRet = ret)
+                    fixed (T* dst = ret)
                     {
-                        T* dst = dstRet; //local stack copy
-                        if (typeof(T).IsPrimitive)
-                        {
-                            var src = (T*) buffer;
-                            len *= ((long) itemsize);
-                            System.Buffer.MemoryCopy(src, dst, len, len);
-                        } else
-                        {
-                            var itemsize = (long) this.itemsize;
-                            var buffer = this.buffer.ToInt64();
-                            Parallel.For(0L, len, i => dst[i] = Marshal.PtrToStructure<T>(new IntPtr(buffer + i * itemsize)));
-                        }
+                        //T can only be unmanaged, I believe it is safe to say that MemoryCopy is valid for all cases this method can be called.
+                        var src = (T*) buffer;
+                        len *= ((long) itemsize);
+                        System.Buffer.MemoryCopy(src, dst, len, len);
                     }
                 }
 
@@ -384,9 +368,15 @@ namespace Tensorflow
             }
         }
 
-        /// Used internally in ToArray&lt;T&gt;
-        private unsafe string[] StringData()
+        /// <summary>
+        ///     Extracts string array from current Tensor.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">When <see cref="dtype"/> != TF_DataType.TF_STRING</exception>
+        public unsafe string[] StringData()
         {
+            if (dtype != TF_DataType.TF_STRING)
+                throw new InvalidOperationException($"Unable to call StringData when dtype != TF_DataType.TF_STRING (dtype is {dtype})");
+
             //
             // TF_STRING tensors are encoded with a table of 8-byte offsets followed by TF_StringEncode-encoded bytes.
             // [offset1, offset2,...,offsetn, s1size, s1bytes, s2size, s2bytes,...,snsize,snbytes]
@@ -442,113 +432,9 @@ namespace Tensorflow
         /// <param name="feed_dict">A dictionary that maps `Tensor` objects to feed values.</param>
         /// <param name="session">The `Session` to be used to evaluate this tensor.</param>
         /// <returns>A <see cref="NumSharp"/> array corresponding to the value of this tensor.</returns>
-        public NDArray eval(Session session, FeedItem[] feed_dict = null)
+        public NDArray eval(Session session, params FeedItem[] feed_dict)
         {
             return ops._eval_using_default_session(this, feed_dict, graph, session);
-        }
-
-        public Tensor slice(Slice slice)
-        {
-            var slice_spec = new int[] {slice.Start.Value};
-            var begin = new List<int>();
-            var end = new List<int>();
-            var strides = new List<int>();
-
-            var index = 0;
-            var (new_axis_mask, shrink_axis_mask) = (0, 0);
-            var (begin_mask, end_mask) = (0, 0);
-            var ellipsis_mask = 0;
-
-            foreach (var s in slice_spec)
-            {
-                begin.Add(s);
-                if (slice.Stop.HasValue)
-                {
-                    end.Add(slice.Stop.Value);
-                } else
-                {
-                    end.Add(0);
-                    end_mask |= (1 << index);
-                }
-
-                strides.Add(slice.Step);
-
-                index += 1;
-            }
-
-            return tf_with(ops.name_scope(null, "strided_slice", new {begin, end, strides}), scope =>
-            {
-                string name = scope;
-                if (begin != null)
-                {
-                    var (packed_begin, packed_end, packed_strides) =
-                        (array_ops.stack(begin.ToArray()),
-                            array_ops.stack(end.ToArray()),
-                            array_ops.stack(strides.ToArray()));
-
-                    return gen_array_ops.strided_slice(
-                        this,
-                        packed_begin,
-                        packed_end,
-                        packed_strides,
-                        begin_mask: begin_mask,
-                        end_mask: end_mask,
-                        shrink_axis_mask: shrink_axis_mask,
-                        new_axis_mask: new_axis_mask,
-                        ellipsis_mask: ellipsis_mask,
-                        name: name);
-                }
-
-                throw new NotImplementedException("");
-            });
-        }
-
-        public Tensor slice(int start)
-        {
-            var slice_spec = new int[] {start};
-            var begin = new List<int>();
-            var end = new List<int>();
-            var strides = new List<int>();
-
-            var index = 0;
-            var (new_axis_mask, shrink_axis_mask) = (0, 0);
-            var (begin_mask, end_mask) = (0, 0);
-            var ellipsis_mask = 0;
-
-            foreach (var s in slice_spec)
-            {
-                begin.Add(s);
-                end.Add(s + 1);
-                strides.Add(1);
-                shrink_axis_mask |= (1 << index);
-                index += 1;
-            }
-
-            return tf_with(ops.name_scope(null, "strided_slice", new {begin, end, strides}), scope =>
-            {
-                string name = scope;
-                if (begin != null)
-                {
-                    var (packed_begin, packed_end, packed_strides) =
-                        (array_ops.stack(begin.ToArray()),
-                            array_ops.stack(end.ToArray()),
-                            array_ops.stack(strides.ToArray()));
-
-                    return gen_array_ops.strided_slice(
-                        this,
-                        packed_begin,
-                        packed_end,
-                        packed_strides,
-                        begin_mask: begin_mask,
-                        end_mask: end_mask,
-                        shrink_axis_mask: shrink_axis_mask,
-                        new_axis_mask: new_axis_mask,
-                        ellipsis_mask: ellipsis_mask,
-                        name: name);
-                }
-
-                throw new NotImplementedException("");
-            });
         }
 
         public override string ToString()
@@ -566,25 +452,38 @@ namespace Tensorflow
             return $"tf.Tensor '{name}' shape=({string.Join(",", shape)}) dtype={dtype}";
         }
 
-        protected override void DisposeUnmanagedResources(IntPtr handle)
+        /// <summary>
+        ///     Dispose any managed resources.
+        /// </summary>
+        /// <remarks>Equivalent to what you would perform inside <see cref="DisposableObject.Dispose"/></remarks>
+        protected override void DisposeManagedResources()
         {
-            if (handle != IntPtr.Zero)
-            {
-                c_api.TF_DeleteTensor(handle);
-                _handle = IntPtr.Zero;
-            }
+            AllocationReferenceHolder = null;
         }
 
-        public bool IsDisposed
+        [SuppressMessage("ReSharper", "ConvertIfStatementToSwitchStatement")]
+        protected override void DisposeUnmanagedResources(IntPtr handle)
         {
-            get
+            c_api.TF_DeleteTensor(handle);
+
+            if (AllocationHandle == null) 
+                return;
+
+            if (AllocationType == AllocationType.GCHandle)
             {
-                lock (this)
-                {
-                    return _handle == IntPtr.Zero;
-                }
-            }
+                ((GCHandle) AllocationHandle).Free();
+                AllocationHandle = null;
+                AllocationType = AllocationType.None;
+            } else if (AllocationType == AllocationType.Marshal)
+            {
+                Marshal.FreeHGlobal((IntPtr) AllocationHandle);
+                AllocationHandle = null;
+                AllocationType = AllocationType.None;
+            } else
+                throw new InvalidOperationException($"Tensor.AllocationHandle is not null ({AllocationHandle}) but AllocationType is not matched to a C# allocation type ({AllocationType}).");
         }
+
+        public bool IsDisposed => _disposed;
 
         public int tensor_int_val { get; set; }
     }

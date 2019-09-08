@@ -31,7 +31,10 @@ namespace Tensorflow
             public Optimizer AdamOptimizer(float learning_rate, string name = "Adam") 
                 => new AdamOptimizer(learning_rate, name: name);
 
-            public object ExponentialMovingAverage(float decay)
+            public Optimizer AdamOptimizer(Tensor learning_rate, string name = "Adam")
+                => new AdamOptimizer(learning_rate, name: name);
+
+            public ExponentialMovingAverage ExponentialMovingAverage(float decay)
                 => new ExponentialMovingAverage(decay);
 
             public Saver Saver(VariableV1[] var_list = null) => new Saver(var_list: var_list);
