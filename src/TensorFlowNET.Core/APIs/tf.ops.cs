@@ -14,15 +14,32 @@
    limitations under the License.
 ******************************************************************************/
 
+using System.Collections.Generic;
+
 namespace Tensorflow
 {
     public partial class tensorflow
     {
+        public void add_to_collection<T>(string name, T value)
+            => get_default_graph().add_to_collection(name, value);
+
+        public void add_to_collections<T>(List<string> names, T value)
+            => get_default_graph().add_to_collections(names, value);
+
         public Tensor assign(Tensor @ref, object value, bool validate_shape = true, bool use_locking = true, string name = null) 
             => state_ops.assign(@ref, value, validate_shape, use_locking, name);
 
+        public void device(string device_name)
+            => get_default_graph().device(device_name);
+
         public object get_collection(string key, string scope = "") 
             => get_default_graph().get_collection(key, scope: scope);
+
+        /// <summary>
+        /// A context manager that lifts ops out of control-flow scopes and function-building graphs.
+        /// </summary>
+        public void init_scope()
+            => ops.init_scope();
 
         /// <summary>
         /// Returns a context manager that creates hierarchical names for operations.

@@ -40,7 +40,7 @@ namespace Tensorflow
 
         public tensorflow()
         {
-            _defaultSessionFactory = new ThreadLocal<Session>(Session);
+            _defaultSessionFactory = new ThreadLocal<Session>(() => new Session());
         }
 
         public Session defaultSession => _defaultSessionFactory.Value;
@@ -73,17 +73,17 @@ namespace Tensorflow
 
         public Session Session()
         {
-            return new Session();
+            return new Session().as_default();
         }
 
         public Session Session(Graph graph, SessionOptions opts = null)
         {
-            return new Session(graph, opts: opts);
+            return new Session(graph, opts: opts).as_default();
         }
 
         public Session Session(SessionOptions opts)
         {
-            return new Session(null, opts);
+            return new Session(null, opts).as_default();
         }
 
         public void __init__()

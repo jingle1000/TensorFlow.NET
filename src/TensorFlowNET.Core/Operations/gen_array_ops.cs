@@ -26,6 +26,20 @@ namespace Tensorflow
         public static OpDefLibrary _op_def_lib = new OpDefLibrary();
         public static Execute _execute = new Execute();
 
+        public static Tensor batch_to_space_nd<T>(T input, int[] block_shape, int[,] crops, string name = null)
+        {
+            var _op = _op_def_lib._apply_op_helper("BatchToSpaceND", name: name, args: new { input, block_shape, crops });
+
+            return _op.output;
+        }
+        
+        public static Tensor check_numerics(Tensor tensor, string message, string name = null)
+        {
+            var _op = _op_def_lib._apply_op_helper("CheckNumerics", name: name, args: new { tensor, message });
+
+            return _op.output;
+        }
+
         /// <summary>
         /// Concatenates tensors along one dimension.
         /// </summary>
@@ -221,6 +235,12 @@ namespace Tensorflow
             return (_op.outputs[0], _op.outputs[1]);
         }
 
+        public static Tensor reverse<T>(Tensor tensor, T axis, string name = null)
+        {
+            var _op = _op_def_lib._apply_op_helper("ReverseV2", name, new { tensor, axis });
+            return _op.output;
+        }
+
         public static Tensor reshape<T1, T2>(T1 tensor, T2 shape, string name = null)
         {
             var _op = _op_def_lib._apply_op_helper("Reshape", name, new { tensor, shape });
@@ -248,9 +268,16 @@ namespace Tensorflow
             return (_op.outputs[0], _op.outputs[1]);
         }
 
-        public static Tensor where()
+        public static Tensor[] unpack(Tensor value, int num, int axis = 0, string name = null)
         {
-            throw new NotImplementedException("where");
+            var _op = _op_def_lib._apply_op_helper("Unpack", name, new { value, num, axis });
+            return _op.outputs;
+        }
+
+        public static Tensor where(Tensor condition, string name = null)
+        {
+            var _op = _op_def_lib._apply_op_helper("Where", name, new { input = condition });
+            return _op.output;
         }
 
         public static Tensor one_hot(Tensor indices, int depth,
