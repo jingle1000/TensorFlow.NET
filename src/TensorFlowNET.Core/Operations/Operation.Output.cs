@@ -17,12 +17,18 @@
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
+#if SERIALIZABLE
+using Newtonsoft.Json;
+#endif
 using static Tensorflow.Binding;
 
 namespace Tensorflow
 {
     public partial class Operation
     {
+#if SERIALIZABLE
+        [JsonIgnore]
+#endif
         public int NumOutputs => c_api.TF_OperationNumOutputs(_handle);
         public TF_DataType OutputType(int index) => c_api.TF_OperationOutputType(_tf_output(index));
 
@@ -40,7 +46,9 @@ namespace Tensorflow
 
         private Tensor[] _outputs;
         public Tensor[] outputs => _outputs;
-
+#if SERIALIZABLE
+        [JsonIgnore]
+#endif
         public Tensor output => _outputs.FirstOrDefault();
 
         public int NumControlOutputs => c_api.TF_OperationNumControlOutputs(_handle);

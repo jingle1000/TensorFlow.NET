@@ -75,7 +75,10 @@ namespace Tensorflow
     ///     then create a TensorFlow session to run parts of the graph across a set of local and remote devices.
     /// </summary>
     /// <remarks>https://www.tensorflow.org/guide/graphs <br></br>https://www.tensorflow.org/api_docs/python/tf/Graph</remarks>
-    public partial class Graph : DisposableObject, IEnumerable<Operation>
+    public partial class Graph : DisposableObject,
+#if !SERIALIZABLE
+        IEnumerable<Operation>
+#endif
     {
         private Dictionary<int, ITensorOrOperation> _nodes_by_id;
         public Dictionary<string, ITensorOrOperation> _nodes_by_name;
@@ -227,6 +230,10 @@ namespace Tensorflow
 
         public void add_to_collection<T>(string name, T value)
         {
+            if(name == "update_ops")
+            {
+
+            }
             _check_not_finalized();
             if (_collections.ContainsKey(name))
                 (_collections[name] as List<T>).Add(value);
@@ -253,16 +260,12 @@ namespace Tensorflow
             if (inputs == null)
                 inputs = new Tensor[0];
 
-            foreach ((int idx, Tensor a) in enumerate(inputs))
-            {
-
-            }
-
-            if (String.IsNullOrEmpty(name))
+            if (string.IsNullOrEmpty(name))
                 name = op_type;
+
             // If a names ends with a '/' it is a "name scope" and we use it as-is,
             // after removing the trailing '/'.
-            name = name.EndsWith("/") ? ops._name_from_scope_name(name) : unique_name(name);
+            name = name.EndsWith("/") ? ops.name_from_scope_name(name) : unique_name(name);
             var node_def = ops._NodeDef(op_type, name, device: "", attrs: attrs);
 
             var input_ops = inputs.Select(x => x.op).ToArray();
@@ -337,7 +340,7 @@ namespace Tensorflow
             if (string.IsNullOrEmpty(name))
                 new_stack = "";
             else if (name.EndsWith("/"))
-                new_stack = ops._name_from_scope_name(name);
+                new_stack = ops.name_from_scope_name(name);
             else
                 new_stack = unique_name(name);
 
@@ -371,6 +374,10 @@ namespace Tensorflow
         /// to name the operation being created.</returns>
         public string unique_name(string name, bool mark_as_used = true)
         {
+            if (name.EndsWith("basic_r_n_n_cell"))
+            {
+
+            }
             if (!String.IsNullOrEmpty(_name_stack))
                 name = _name_stack + "/" + name;
             // For the sake of checking for names in use, we treat names as case
@@ -436,10 +443,16 @@ namespace Tensorflow
                 case List<VariableV1> list:
                     t = list.Select(x => (T)(object)x).ToList();
                     break;
+                case List<ResourceVariable> list:
+                    t = list.Select(x => (T)(object)x).ToList();
+                    break;
                 case List<RefVariable> list:
                     t = list.Select(x => (T)(object)x).ToList();
                     break;
                 case List<Tensor> list:
+                    t = list.Select(x => (T)(object)x).ToList();
+                    break;
+                case List<Operation> list:
                     t = list.Select(x => (T)(object)x).ToList();
                     break;
                 default:
@@ -448,11 +461,11 @@ namespace Tensorflow
             return t;
         }
 
-        public object get_collection_ref(string name)
+        public List<T> get_collection_ref<T>(string name)
         {
             if (!_collections.ContainsKey(name))
-                _collections[name] = new List<object>();
-            return _collections[name];
+                _collections[name] = new List<T>();
+            return _collections[name] as List<T>;
         }
 
         public void prevent_feeding(Tensor tensor)
@@ -516,6 +529,7 @@ namespace Tensorflow
             return debugString;*/
         }
 
+#if !SERIALIZABLE
         private IEnumerable<Operation> GetEnumerable()
             => c_api_util.tf_operations(this);
 
@@ -524,6 +538,7 @@ namespace Tensorflow
 
         IEnumerator IEnumerable.GetEnumerator() 
             => throw new NotImplementedException();
+#endif
 
         public static implicit operator IntPtr(Graph graph)
         {

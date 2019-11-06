@@ -42,7 +42,8 @@ namespace Tensorflow.Gradients
             var x = op.inputs[0];
             var y = op.inputs[1];
             var grad = grads[0];
-            if (grad is Tensor && _ShapesFullySpecifiedAndEqual(x, y, grad))
+            if (grad is Tensor && 
+                _ShapesFullySpecifiedAndEqual(x, y, grad))
                 return new Tensor[] { grad, grad };
 
             var sx = array_ops.shape(x);
@@ -55,6 +56,20 @@ namespace Tensorflow.Gradients
             var r2 = gen_array_ops.reshape(sum2, sy);
 
             return new Tensor[] { r1, r2 };
+        }
+
+        [RegisterGradient("Cumsum")]
+        public static Tensor[] _CumsumGrad(Operation op, Tensor[] grads)
+        {
+            var grad = grads[0];
+            var axis = op.inputs[1];
+            var exclusive = op.get_attr<bool>("exclusive");
+            var reverse = op.get_attr<bool>("reverse");
+            return new Tensor[]
+            {
+                math_ops.cumsum(grad, axis, exclusive: exclusive, reverse: !reverse),
+                null
+            };
         }
 
         [RegisterGradient("DivNoNan")]
@@ -96,12 +111,11 @@ namespace Tensorflow.Gradients
             });
         }
 
-        [RegisterGradient("GreaterEqual")]
-        public static Tensor[] _GreaterEqualGrad(Operation op, Tensor[] grads)
-        {
-            var grad = grads[0];
-            throw new NotImplementedException("_GreaterEqualGrad");
-        }
+        [RegisterNoGradient("GreaterEqual")]
+        public static Tensor[] _GreaterEqualGrad(Operation op, Tensor[] grads) => null;
+
+        [RegisterNoGradient("ZerosLike")]
+        public static Tensor[] _ZerosLike(Operation op, Tensor[] grads) => null;
 
         [RegisterGradient("Identity")]
         public static Tensor[] _IdGrad(Operation op, Tensor[] grads)
@@ -376,7 +390,8 @@ namespace Tensorflow.Gradients
             var grad = grads[0];
             var x = op.inputs[0];
             var y = op.inputs[1];
-            if (grad is Tensor && _ShapesFullySpecifiedAndEqual(x, y, grad))
+            if (grad is Tensor && 
+                _ShapesFullySpecifiedAndEqual(x, y, grad))
                 return new Tensor[] { grad, -grad };
 
             var sx = array_ops.shape(x);
@@ -394,9 +409,10 @@ namespace Tensorflow.Gradients
             var x_shape = x._shape_tuple();
             var y_shape = y._shape_tuple();
             var grad_shape = grad._shape_tuple();
-            return Enumerable.SequenceEqual(x_shape, y_shape) &&
+            return x_shape != null && 
+                y_shape != null &&
+                Enumerable.SequenceEqual(x_shape, y_shape) &&
                 Enumerable.SequenceEqual(y_shape, grad_shape) &&
-                x_shape.Length > -1 &&
                 !x_shape.Contains(-1);
         }
 
@@ -415,7 +431,9 @@ namespace Tensorflow.Gradients
                     var rank = input_0_shape.Length;
                     if (Enumerable.SequenceEqual(Enumerable.Range(0, rank), axes.Data<int>()))
                     {
-                        grad = array_ops.reshape(grad, new int[] { 1 });
+                        var new_shape = range(rank).Select(x => 1).ToArray();
+                        grad = array_ops.reshape(grad, new_shape);
+                        // If shape is not fully defined (but rank is), we use Shape.
                         if (!input_0_shape.Contains(-1))
                             input_shape = constant_op.constant(input_0_shape);
                         else

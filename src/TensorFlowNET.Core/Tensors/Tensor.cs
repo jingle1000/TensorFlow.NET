@@ -28,6 +28,9 @@ using NumSharp.Backends;
 using NumSharp.Backends.Unmanaged;
 using NumSharp.Utilities;
 using Tensorflow.Framework;
+#if SERIALIZABLE
+using Newtonsoft.Json;
+#endif
 
 namespace Tensorflow
 {
@@ -36,26 +39,41 @@ namespace Tensorflow
     /// Internally, TensorFlow represents tensors as n-dimensional arrays of base datatypes.
     /// </summary>
     [SuppressMessage("ReSharper", "ConvertToAutoProperty")]
-    public partial class Tensor : DisposableObject, ITensorOrOperation, _TensorLike
+    public partial class Tensor : DisposableObject, 
+        ITensorOrOperation, 
+        _TensorLike, 
+        ITensorOrTensorArray, 
+        IPackable<Tensor>,
+        ICanBeFlattened
     {
         private readonly int _id;
         private readonly Operation _op;
         private readonly int _value_index;
         private TF_Output? _tf_output;
         private readonly TF_DataType _override_dtype;
-
+#if SERIALIZABLE
+        [JsonIgnore]
+#endif
         public int Id => _id;
 
         /// <summary>
         ///     The Graph that contains this tensor.
         /// </summary>
+#if SERIALIZABLE
+        [JsonIgnore]
+#endif
         public Graph graph => op?.graph;
 
         /// <summary>
         ///     The Operation that produces this tensor as an output.
         /// </summary>
+#if SERIALIZABLE
+        [JsonIgnore]
+#endif
         public Operation op => _op;
-
+#if SERIALIZABLE
+        [JsonIgnore]
+#endif
         public Tensor[] outputs => op.outputs;
 
         /// <summary>
@@ -72,24 +90,40 @@ namespace Tensorflow
         ///     The DType of elements in this tensor.
         /// </summary>
         public TF_DataType dtype => _handle == IntPtr.Zero ? _override_dtype : c_api.TF_TensorType(_handle);
-
+#if SERIALIZABLE
+        [JsonIgnore]
+#endif
         public ulong bytesize => _handle == IntPtr.Zero ? 0 : c_api.TF_TensorByteSize(_handle);
+#if SERIALIZABLE
+        [JsonIgnore]
+#endif
         public ulong itemsize => _handle == IntPtr.Zero ? 0 : c_api.TF_DataTypeSize(dtype);
+#if SERIALIZABLE
+        [JsonIgnore]
+#endif
         public ulong size => _handle == IntPtr.Zero ? 0 : bytesize / itemsize;
         public IntPtr buffer => _handle == IntPtr.Zero ? IntPtr.Zero : c_api.TF_TensorData(_handle);
         public int num_consumers(TF_Output oper_out) => _handle == IntPtr.Zero ? 0 : c_api.TF_OperationOutputNumConsumers(oper_out);
+#if SERIALIZABLE
+        [JsonIgnore]
+#endif
         public int NDims => rank;
 
         /// <summary>
         ///     The name of the device on which this tensor will be produced, or null.
         /// </summary>
         public string Device => op.Device;
-
+#if SERIALIZABLE
+        [JsonIgnore]
+#endif
         public int[] dims => shape;
 
         /// <summary>
         ///     Used for keep other pointer when do implicit operating
         /// </summary>
+#if SERIALIZABLE
+        [JsonIgnore]
+#endif
         public object Tag { get; set; }
 
 
@@ -105,10 +139,13 @@ namespace Tensorflow
 
                 if (_handle == IntPtr.Zero)
                 {
-                    var status = new Status();
-                    c_api.TF_GraphGetTensorShape(op.graph, _as_tf_output(), dims, rank, status);
-                    status.Check();
-                } else
+                    using (var status = new Status())
+                    {
+                        c_api.TF_GraphGetTensorShape(op.graph, _as_tf_output(), dims, rank, status);
+                        status.Check();
+                    }
+                }
+                else
                 {
                     for (int i = 0; i < rank; i++)
                         dims[i] = c_api.TF_Dim(_handle, i);
@@ -119,39 +156,34 @@ namespace Tensorflow
 
             set
             {
-                var status = new Status();
+                using (var status = new Status())
+                {
+                    if (value == null)
+                        c_api.TF_GraphSetTensorShape(this.graph, this._as_tf_output(), null, -1, status);
+                    else
+                        c_api.TF_GraphSetTensorShape(this.graph, this._as_tf_output(), value.Select(Convert.ToInt64).ToArray(), value.Length, status);
 
-                if (value == null)
-                    c_api.TF_GraphSetTensorShape(this.graph, this._as_tf_output(), null, -1, status);
-                else
-                    c_api.TF_GraphSetTensorShape(this.graph, this._as_tf_output(), value.Select(Convert.ToInt64).ToArray(), value.Length, status);
-
-                status.Check(true);
+                    status.Check(true);
+                }
             }
         }
 
         public int[] _shape_tuple()
         {
-            return (int[]) shape.Clone();
+            return rank < 0 ? null : shape;
         }
 
-        public TensorShape TensorShape => tensor_util.to_shape(shape);
+#if SERIALIZABLE
+        [JsonIgnore]
+#endif
+        public TensorShape TensorShape => rank < 0 ? new TensorShape() : tensor_util.to_shape(shape);
 
         /// <summary>
         ///     Updates the shape of this tensor.
         /// </summary>
         public void set_shape(TensorShape shape) 
         {
-            this.shape = (int[]) shape.dims.Clone();
-        }
-
-        /// <summary>
-        ///     Updates the shape of this tensor.
-        /// </summary>
-        [Obsolete("Please use set_shape(TensorShape shape) instead.", false)]
-        public void SetShape(TensorShape shape) 
-        {
-            this.shape = (int[]) shape.dims.Clone();
+            this.shape = shape.rank >= 0 ? shape.dims : null;
         }
 
         /// <summary>
@@ -165,6 +197,7 @@ namespace Tensorflow
 
         /// <summary>
         /// number of dimensions <br></br>
+        /// -1 Unknown  <br></br>
         /// 0	Scalar (magnitude only) <br></br>
         /// 1	Vector (magnitude and direction) <br></br>
         /// 2	Matrix (table of numbers) <br></br>
@@ -178,11 +211,13 @@ namespace Tensorflow
             {
                 if (_handle == IntPtr.Zero)
                 {
-                    var status = new Status();
-                    var output = _as_tf_output();
-                    int ndim = c_api.TF_GraphGetTensorNumDims(op.graph, output, status);
-                    status.Check();
-                    return ndim;
+                    using (var status = new Status())
+                    {
+                        var output = _as_tf_output();
+                        int ndim = c_api.TF_GraphGetTensorNumDims(op.graph, output, status);
+                        status.Check();
+                        return ndim;
+                    }
                 }
 
                 return c_api.TF_NumDims(_handle);
@@ -440,16 +475,15 @@ namespace Tensorflow
         public override string ToString()
         {
             // this can throw IndexOutOfRangeException 
-            //if(NDims == 0)
-            //{
-            //    switch (dtype)
-            //    {
-            //        case TF_DataType.TF_INT32:
-            //            return Data<int>()[0].ToString();
-            //    }
-            //}
-
-            return $"tf.Tensor '{name}' shape=({string.Join(",", shape)}) dtype={dtype}";
+            switch (rank)
+            {
+                case -1:
+                    return $"tf.Tensor '{name}' shape=<unknown> dtype={dtype}";
+                case 0:
+                    return $"tf.Tensor '{name}' shape=() dtype={dtype}";
+                default:
+                    return $"tf.Tensor '{name}' shape=({string.Join(",", shape)}) dtype={dtype}";
+            }
         }
 
         /// <summary>
@@ -482,9 +516,11 @@ namespace Tensorflow
             } else
                 throw new InvalidOperationException($"Tensor.AllocationHandle is not null ({AllocationHandle}) but AllocationType is not matched to a C# allocation type ({AllocationType}).");
         }
-
+#if SERIALIZABLE
+        [JsonIgnore]
+#endif
         public bool IsDisposed => _disposed;
 
-        public int tensor_int_val { get; set; }
+        // public int tensor_int_val { get; set; }
     }
 }

@@ -97,9 +97,9 @@ namespace Tensorflow
         /// <param name="is_training"></param>
         /// <param name="name"></param>
         /// <returns></returns>
-        public static Tensor[] fused_batch_norm(Tensor x, 
-            RefVariable scale,
-            RefVariable offset,
+        public static Tensor[] fused_batch_norm(Tensor x,
+            VariableV1 scale,
+            VariableV1 offset,
             Tensor mean,
             Tensor variance,
             float epsilon = 0.001f,
@@ -154,7 +154,7 @@ namespace Tensorflow
 
         public static Tensor sigmoid_cross_entropy_with_logits(Tensor labels, Tensor logits, string name = null)
         {
-            return tf_with(ops.name_scope(name, "", new { }), scope =>
+            return tf_with(ops.name_scope(name, "logistic_loss", new { logits, labels }), scope =>
             {
                 name = scope;
                 logits = ops.convert_to_tensor(logits, name: "logits");

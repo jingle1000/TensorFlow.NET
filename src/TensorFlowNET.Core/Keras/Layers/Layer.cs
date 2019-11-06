@@ -51,7 +51,8 @@ namespace Tensorflow.Keras.Layers
         /// </summary>
         protected InputSpec input_spec;
         protected bool supports_masking;
-        protected List<RefVariable> _trainable_weights;
+        protected List<VariableV1> _trainable_weights;
+        protected List<VariableV1> _non_trainable_weights;
         private string _name;
         public string name => _name;
         protected string _base_name;
@@ -64,6 +65,8 @@ namespace Tensorflow.Keras.Layers
 
         private List<Node> _outbound_nodes;
         public List<Node> outbound_nodes => _outbound_nodes;
+
+        float _initial_weights;
 
         public Layer(bool trainable = true, 
             string name = null, 
@@ -81,25 +84,33 @@ namespace Tensorflow.Keras.Layers
             this.supports_masking = false;
 
             _init_set_name(name);
-            _trainable_weights = new List<RefVariable>();
+            _trainable_weights = new List<VariableV1>();
+            _non_trainable_weights = new List<VariableV1>();
             _compute_previous_mask = false;
             _updates = new List<Operation>();
 
             // Manage input shape information if passed.
-
-            _batch_input_shape = new int[] { -1, -1 };
+            if(input_shape != null)
+            {
+                var shapes = new List<int> { -1 };
+                shapes.AddRange(input_shape);
+                _batch_input_shape = shapes.ToArray();
+            }
+            
 
             _dtype = dtype;
 
             _inbound_nodes = new List<Node>();
         }
 
-        public Tensor __call__(Tensor[] inputs,
+        public Tensor[] __call__(Tensor[] inputs,
             Tensor training = null,
+            Tensor state = null,
             VariableScope scope = null)
         {
             var input_list = inputs;
-            Tensor outputs = null;
+            var input = inputs[0];
+            Tensor[] outputs = null;
 
             // We will attempt to build a TF graph if & only if all inputs are symbolic.
             // This is always the case in graph mode. It can also be the case in eager
@@ -131,7 +142,11 @@ namespace Tensorflow.Keras.Layers
                     // overridden).
                     _maybe_build(inputs[0]);
 
-                    outputs = call(inputs[0], training: training);
+                    outputs = call(inputs[0], 
+                        training: training,
+                        state: state);
+
+                    (input, outputs) = _set_connectivity_metadata_(input, outputs);
                     _handle_activity_regularization(inputs[0], outputs);
                     _set_mask_metadata(inputs[0], outputs, null);
                 });
@@ -140,7 +155,13 @@ namespace Tensorflow.Keras.Layers
             return outputs;
         }
 
-        private void _handle_activity_regularization(Tensor inputs, Tensor outputs)
+        private (Tensor, Tensor[]) _set_connectivity_metadata_(Tensor inputs, Tensor[] outputs)
+        {
+            //_add_inbound_node(input_tensors: inputs, output_tensors: outputs);
+            return (inputs, outputs);
+        }
+
+        private void _handle_activity_regularization(Tensor inputs, Tensor[] outputs)
         {
             //if(_activity_regularizer != null)
             {
@@ -148,7 +169,7 @@ namespace Tensorflow.Keras.Layers
             }
         }
 
-        private void _set_mask_metadata(Tensor inputs, Tensor outputs, Tensor previous_mask)
+        private void _set_mask_metadata(Tensor inputs, Tensor[] outputs, Tensor previous_mask)
         {
 
         }
@@ -158,9 +179,9 @@ namespace Tensorflow.Keras.Layers
             return null;
         }
 
-        protected virtual Tensor call(Tensor inputs, Tensor training = null)
+        protected virtual Tensor[] call(Tensor inputs, Tensor training = null, Tensor state = null)
         {
-            return inputs;
+            throw new NotImplementedException("");
         }
 
         protected virtual string _name_scope()
@@ -186,12 +207,12 @@ namespace Tensorflow.Keras.Layers
             built = true;
         }
 
-        protected virtual RefVariable add_weight(string name,
+        protected virtual VariableV1 add_weight(string name,
             int[] shape,
             TF_DataType dtype = TF_DataType.DtInvalid,
             IInitializer initializer = null,
             bool? trainable = null,
-            Func<string, int[], TF_DataType, IInitializer, bool, RefVariable> getter = null)
+            Func<string, int[], TF_DataType, IInitializer, bool, VariableV1> getter = null)
         {
             if (dtype == TF_DataType.DtInvalid)
                 dtype = TF_DataType.TF_FLOAT;
@@ -217,8 +238,11 @@ namespace Tensorflow.Keras.Layers
                 overwrite: true,
                 initializer: initializer,
                 trainable: trainable.Value);
-            backend.track_variable(variable);
-            _trainable_weights.Add(variable);
+            //backend.track_variable(variable);
+            if (trainable == true)
+                _trainable_weights.Add(variable);
+            else
+                _non_trainable_weights.Add(variable);
 
             return variable;
         }

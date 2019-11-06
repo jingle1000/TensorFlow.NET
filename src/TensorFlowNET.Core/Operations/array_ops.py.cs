@@ -600,8 +600,17 @@ namespace Tensorflow
             return gen_array_ops.concat_v2(values, axis, name: name);
         }
 
-        public static Tensor gather(Tensor @params, Tensor indices, string name = null, int axis = 0)
-            => gen_array_ops.gather_v2(@params, indices, axis, name: name);
+        public static Tensor gather<T1, T2>(T1 @params, T2 indices, string name = null, int axis = 0)
+        {
+            if (axis != 0)
+                return gen_array_ops.gather_v2(@params, indices, axis, name: name);
+
+            if (@params is ResourceVariable variable &&
+                indices is Tensor indices_tensor)
+                return variable.sparse_read(indices_tensor, name);
+
+            return gen_array_ops.gather_v2(@params, indices, axis, name: name);
+        }
 
         public static Tensor transpose<T1, T2>(T1 a, T2 perm, string name = "transpose", bool conjugate = false)
         {
@@ -611,7 +620,7 @@ namespace Tensorflow
             });
         }
 
-        public static Tensor slice<Tb, Ts>(Tensor input, Tb[] begin, Ts[] size, string name = null)
+        public static Tensor slice<Tb, Ts>(Tensor input, Tb begin, Ts size, string name = null)
             => gen_array_ops.slice(input, begin, size, name: name);
 
         public static Tensor stack(object values, int axis = 0, string name = "stack")

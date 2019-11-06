@@ -73,9 +73,9 @@ namespace Tensorflow
             return get_default_graph().get_collection<T>(key, scope);
         }
 
-        public static object get_collection_ref(string key)
+        public static List<T> get_collection_ref<T>(string key)
         {
-            return get_default_graph().get_collection_ref(key);
+            return get_default_graph().get_collection_ref<T>(key);
         }
 
         /// <summary>
@@ -186,12 +186,7 @@ namespace Tensorflow
         /// operations constructed within the context.
         /// </returns>
         public static _ControlDependenciesController control_dependencies(object[] control_inputs)
-        {
-            return get_default_graph().control_dependencies(control_inputs);
-        }
-
-        public static _ControlDependenciesController control_dependencies(ITensorOrOperation[] control_inputs)
-            => control_dependencies(control_inputs == null ? null : control_inputs.OfType<object>().ToArray());
+            => get_default_graph().control_dependencies(control_inputs);
 
         /// <summary>
         /// Creates a TF_Operation.
@@ -212,9 +207,9 @@ namespace Tensorflow
             {
                 var op_desc = graph.NewOperation(node_def.Op, node_def.Name);
 
-                //TODO: Implement TF_SetDevice
-                //if node_def.device:
-                //    c_api.TF_SetDevice(op_desc, compat.as_str(node_def.device))
+                if (!string.IsNullOrEmpty(node_def.Device))
+                    c_api.TF_SetDevice(op_desc, node_def.Device);
+
                 // Add inputs
                 foreach (var op_input in inputs)
                 {
@@ -227,29 +222,30 @@ namespace Tensorflow
                         throw new NotImplementedException("_create_c_op");
                 }
 
-                var status = new Status();
-
-                // Add control inputs
-                foreach (var control_input in control_inputs)
-                    c_api.TF_AddControlInput(op_desc, control_input);
-
-                // Add attrs
-                foreach (var attr in node_def.Attr)
+                using (var status = new Status())
                 {
-                    var bytes = attr.Value.ToByteArray(); //TODO: we can use attr.Value.WriteTo with a memory stream.
-                    var proto = Marshal.AllocHGlobal(bytes.Length); //TODO: potential memory leak
-                    Marshal.Copy(bytes, 0, proto, bytes.Length);
-                    uint len = (uint) bytes.Length;
-                    c_api.TF_SetAttrValueProto(op_desc, attr.Key, proto, proto_len: len, status: status);
+                    // Add control inputs
+                    foreach (var control_input in control_inputs)
+                        c_api.TF_AddControlInput(op_desc, control_input);
+
+                    // Add attrs
+                    foreach (var attr in node_def.Attr)
+                    {
+                        var bytes = attr.Value.ToByteArray(); //TODO: we can use attr.Value.WriteTo with a memory stream.
+                        var protoHandle = Marshal.AllocHGlobal(bytes.Length);
+                        Marshal.Copy(bytes, 0, protoHandle, bytes.Length);
+                        uint len = (uint)bytes.Length;
+                        c_api.TF_SetAttrValueProto(op_desc, attr.Key, protoHandle, proto_len: len, status: status);
+                        status.Check(true);
+                        Marshal.FreeHGlobal(protoHandle);
+                    }
+
+                    var c_op = c_api.TF_FinishOperation(op_desc, status);
 
                     status.Check(true);
+
+                    return c_op;
                 }
-
-                var c_op = c_api.TF_FinishOperation(op_desc, status);
-
-                status.Check(true);
-
-                return c_op;
             }
         }
 
@@ -273,7 +269,7 @@ namespace Tensorflow
             return node_def;
         }
 
-        public static string _name_from_scope_name(string name)
+        public static string name_from_scope_name(string name)
         {
             if (name.EndsWith("/"))
             {
@@ -307,6 +303,22 @@ namespace Tensorflow
                 var outer_graph = get_default_graph();
                 // outer_device_stack = None
             });
+        }
+
+        public static IObjectLife init_scope2()
+        {
+            // Retrieve the active name scope: entering an `init_scope` preserves
+            // the name scope of the current context.
+            var default_graph = get_default_graph();
+            var scope = default_graph.get_name_scope();
+            if (!String.IsNullOrEmpty(scope) && !scope.EndsWith("/"))
+                // Names that end with trailing slashes are treated by `name_scope` as
+                // absolute.
+                scope += "/";
+            // inner_device_stack = default_graph._device_function_stack
+            // var outer_context = default_graph.as_default;
+
+            return ops.control_dependencies(null);
         }
 
         private static int uid_number = 0;
@@ -507,6 +519,8 @@ namespace Tensorflow
                     return null;
                 case TensorShape ts:
                     return constant_op.constant(ts.dims, dtype: dtype, name: name);
+                case int[] dims:
+                    return constant_op.constant(dims, dtype: dtype, name: name);
                 case object[] objects:
                     return array_ops._autopacking_conversion_function(objects, dtype: dtype, name: name);
                 default:

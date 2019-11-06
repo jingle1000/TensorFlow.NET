@@ -14,6 +14,8 @@
    limitations under the License.
 ******************************************************************************/
 
+using static Tensorflow.Binding;
+
 namespace Tensorflow
 {
     public static class gen_math_ops
@@ -238,7 +240,7 @@ namespace Tensorflow
             return _op.outputs[0];
         }
 
-        public static Tensor cumsum(Tensor x, int axis = 0, bool exclusive = false, bool reverse = false, string name = null)
+        public static Tensor cumsum<T>(Tensor x, T axis, bool exclusive = false, bool reverse = false, string name = null)
         {
             var _op = _op_def_lib._apply_op_helper("Cumsum", name, args: new { x, axis, exclusive, reverse });
 
@@ -280,7 +282,7 @@ namespace Tensorflow
         /// <param name="dy"></param>
         /// <param name="name"></param>
         /// <returns></returns>
-        public static Tensor tanh_grad(Tensor y, Tensor dy, string name = "TanhGrad")
+        public static Tensor tanh_grad(Tensor y, Tensor dy, string name = null)
             => _op_def_lib._apply_op_helper("TanhGrad", name: name, args: new { y, dy }).output;
 
         public static Tensor floor(Tensor x, string name = null)
@@ -566,7 +568,7 @@ namespace Tensorflow
         {
             var _op = _op_def_lib._apply_op_helper("MatMul", name, args: new { a, b, transpose_a, transpose_b });
 
-            return _op.outputs[0];
+            return _op.output;
         }
 
         /// <summary>

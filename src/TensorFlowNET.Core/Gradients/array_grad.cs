@@ -27,6 +27,27 @@ namespace Tensorflow.Gradients
     [RegisterGradient("array_grad")]
     public class array_grad
     {
+        [RegisterGradient("BroadcastTo")]
+        public static Tensor[] _BroadcastToGrad(Operation op, Tensor[] grads)
+        {
+            var grad = grads[0];
+            var input_value = op.inputs[0];
+            var broadcast_shape = op.inputs[1];
+            var input_value_shape = array_ops.shape(input_value);
+            var (_, reduction_axes) = gen_array_ops.broadcast_gradient_args(broadcast_shape,
+                                                            input_value_shape);
+            var updates_grad_reshaped = math_ops.reduce_sum(grad,
+                                              axis: reduction_axes,
+                                              keepdims: true);
+            var updates_grad = array_ops.reshape(updates_grad_reshaped, input_value_shape);
+
+            return new Tensor[] 
+            {
+                updates_grad,
+                null
+            };
+        }
+
         [RegisterGradient("ConcatV2")]
         public static Tensor[] _ConcatGradV2(Operation op, Tensor[] grads)
         {
@@ -188,6 +209,26 @@ namespace Tensorflow.Gradients
         public static Tensor[] _ReshapeGrad(Operation op, Tensor[] grads)
         {
             return new Tensor[] { array_ops.reshape(grads[0], array_ops.shape(op.inputs[0])), null };
+        }
+
+        [RegisterGradient("Pad")]
+        public static Tensor[] _PadGrad(Operation op, Tensor[] grads)
+        {
+            var grad = grads[0];
+            var x = op.inputs[0];
+            var a = op.inputs[1];
+            var size = array_ops.stack(new object[] { array_ops.rank(x), 1 });
+            var pad_before = array_ops.slice(a, new[] { 0, 0 }, size);
+
+            // Make it a 1-D tensor.
+            var begin = array_ops.reshape(pad_before, new[] { -1 });
+            var sizes = array_ops.shape(x);
+            var x_grad = array_ops.slice(grad, begin, sizes);
+
+            if (len(op.inputs) == 3)
+                return new Tensor[] { x_grad, null, null };
+            else
+                return new Tensor[] { x_grad, null };
         }
 
         [RegisterGradient("Squeeze")]
