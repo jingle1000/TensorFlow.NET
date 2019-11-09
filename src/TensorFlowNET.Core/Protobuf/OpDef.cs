@@ -244,7 +244,7 @@ namespace Tensorflow {
     /// <summary>
     /// Ops are marked as stateful if their behavior depends on some state beyond
     /// their input tensors (e.g. variable reading op) or if they have
-    /// a side-effect (e.g. printing or asserting ops). Equivalently, stateless ops
+    /// a side-effect (e.g. Console.WriteLineing or asserting ops). Equivalently, stateless ops
     /// must always produce the same output for the same input and have
     /// no side-effects.
     ///

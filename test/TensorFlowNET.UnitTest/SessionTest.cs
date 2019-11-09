@@ -143,8 +143,8 @@ namespace TensorFlowNET.UnitTest
             var ret = sess.run(op, feed_dict: (input, np.array(1, 2, 3, 4, 5, 6)));
 
             ret.Should().BeOfType<double>().And.BeShaped(2, 3).And.BeOfValues(1, 2, 3, 4, 5, 6);
-            print(ret.dtype);
-            print(ret);
+            Console.WriteLine(ret.dtype);
+            Console.WriteLine(ret);
         }
 
         [TestMethod]
@@ -157,8 +157,8 @@ namespace TensorFlowNET.UnitTest
             var ret = sess.run(op, feed_dict: (input, np.array(1, 2, 3, 4, 5, 6).astype(NPTypeCode.Single) + 0.1f));
 
             ret.Should().BeOfType<double>().And.BeShaped(2, 3).And.BeOfValuesApproximately(0.001d, 1.1, 2.1, 3.1, 4.1, 5.1, 6.1);
-            print(ret.dtype);
-            print(ret);
+            Console.WriteLine(ret.dtype);
+            Console.WriteLine(ret);
         }
 
         [TestMethod]
@@ -171,8 +171,8 @@ namespace TensorFlowNET.UnitTest
             var ret = sess.run(op, feed_dict: (input, np.array(1, 2, 3, 4, 5, 6).astype(NPTypeCode.Single) + 0.1f));
 
             ret.Should().BeOfType<short>().And.BeShaped(2, 3).And.BeOfValues(1, 2, 3, 4, 5, 6);
-            print(ret.dtype);
-            print(ret);
+            Console.WriteLine(ret.dtype);
+            Console.WriteLine(ret);
         }
 
         [TestMethod]
@@ -185,8 +185,8 @@ namespace TensorFlowNET.UnitTest
             var ret = sess.run(op, feed_dict: (input, np.array(1, 2, 3, 4, 5, 6).astype(NPTypeCode.Single) + 0.1f));
 
             ret.Should().BeOfType<byte>().And.BeShaped(2, 3).And.BeOfValues(1, 2, 3, 4, 5, 6);
-            print(ret.dtype);
-            print(ret);
+            Console.WriteLine(ret.dtype);
+            Console.WriteLine(ret);
         }
     }
 }

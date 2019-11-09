@@ -489,7 +489,7 @@ namespace Tensorflow.Models.ObjectDetection.Protos {
     /// <summary>
     /// Whether to retain original images (i.e. not pre-processed) in the tensor
     /// dictionary, so that they can be displayed in Tensorboard. Note that this
-    /// will lead to a larger memory footprint.
+    /// will lead to a larger memory footConsole.WriteLine.
     /// </summary>
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     public bool RetainOriginalImages {

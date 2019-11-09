@@ -274,12 +274,12 @@ namespace Tensorflow.Util
 
         //  Note that namedtuples with identical name and fields are always considered
         //  to have the same shallow structure (even with `check_types=True`).
-        //  For intance, this code will print `True`:
+        //  For intance, this code will Console.WriteLine `True`:
 
         //  ```python
         //  def nt(a, b):
         //    return collections.namedtuple('foo', 'a b')(a, b)
-        //  print(assert_same_structure(nt(0, 1), nt(2, 3)))
+        //  Console.WriteLine(assert_same_structure(nt(0, 1), nt(2, 3)))
         //  ```
 
         //  Args:

@@ -85,7 +85,7 @@ namespace Tensorflow
             var variables_data_map = new Dictionary<string, NDArray>();
             foreach(var (i, name) in enumerate(variable_dict_names))
                 variables_data_map[name] = returned_variables[i];
-            print($"Froze {len(returned_variables)} variables.");
+            Console.WriteLine($"Froze {len(returned_variables)} variables.");
 
             // Reconstruct the graph with constants in place of variables.
             var output_graph_def = new GraphDef();
@@ -121,7 +121,7 @@ namespace Tensorflow
             }
 
             output_graph_def.Library = inference_graph.Library;
-            print($"Converted {how_many_converted} variables to const ops.");
+            Console.WriteLine($"Converted {how_many_converted} variables to const ops.");
             return output_graph_def;
         }
 

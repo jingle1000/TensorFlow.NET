@@ -72,7 +72,7 @@ namespace Tensorflow
             }
         }
 
-        public static void print(object obj)
+        public static void Console.WriteLine(object obj)
         {
             Console.WriteLine(_tostring(obj));
         }

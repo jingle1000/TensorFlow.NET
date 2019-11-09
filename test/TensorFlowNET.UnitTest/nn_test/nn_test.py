@@ -16,7 +16,7 @@
 
 from __future__ import absolute_import
 from __future__ import division
-from __future__ import print_function
+from __future__ import Console.WriteLine_function
 
 import math
 
@@ -246,7 +246,7 @@ class L2LossTest(test_lib.TestCase):
       x = constant_op.constant(x_val, name="x")
       output = nn_ops.l2_loss(x)
       err = gradient_checker.compute_gradient_error(x, x_shape, output, [1])
-    print("L2Loss gradient err = %g " % err)
+    Console.WriteLine("L2Loss gradient err = %g " % err)
     err_tolerance = 1e-10
     self.assertLess(err, err_tolerance)
 
@@ -296,7 +296,7 @@ class L2NormalizeTest(test_lib.TestCase):
         y_tf = nn_impl.l2_normalize_v2(x_tf, dim)
         err = gradient_checker.compute_gradient_error(x_tf, x_shape, y_tf,
                                                       x_shape)
-      print("L2Normalize gradient err = %g " % err)
+      Console.WriteLine("L2Normalize gradient err = %g " % err)
       self.assertLess(err, 1e-4)
 
 
@@ -325,7 +325,7 @@ class DropoutTest(test_lib.TestCase):
       # Check that we are in the 15% error range
       expected_count = x_dim * y_dim * keep_prob * num_iter
       rel_error = math.fabs(final_count - expected_count) / expected_count
-      print(rel_error)
+      Console.WriteLine(rel_error)
       self.assertTrue(rel_error < 0.15)
 
   def testShapedDropout(self):
@@ -352,7 +352,7 @@ class DropoutTest(test_lib.TestCase):
       # Check that we are in the 15% error range
       expected_count = x_dim * y_dim * keep_prob * num_iter
       rel_error = math.fabs(final_count - expected_count) / expected_count
-      print(rel_error)
+      Console.WriteLine(rel_error)
       self.assertTrue(rel_error < 0.15)
 
   def testShapedDropoutCorrelation(self):
@@ -397,7 +397,7 @@ class DropoutTest(test_lib.TestCase):
       # Check that we are in the 15% error range
       expected_count = x_dim * y_dim * keep_prob * num_iter
       rel_error = math.fabs(final_count - expected_count) / expected_count
-      print(rel_error)
+      Console.WriteLine(rel_error)
       self.assertTrue(rel_error < 0.15)
 
   @test_util.run_deprecated_v1
@@ -431,7 +431,7 @@ class DropoutTest(test_lib.TestCase):
       # Check that we are in the 15% error range
       expected_count = x_dim * y_dim * keep_prob * num_iter
       rel_error = math.fabs(final_count - expected_count) / expected_count
-      print(rel_error)
+      Console.WriteLine(rel_error)
       self.assertTrue(rel_error < 0.15)
 
   @test_util.run_deprecated_v1

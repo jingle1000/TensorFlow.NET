@@ -1870,20 +1870,20 @@ namespace Tensorflow.Operations
         ///    The condition to evaluate.
         /// </param>
         /// <param name="data">
-        ///    The tensors to print out when condition is false.
+        ///    The tensors to Console.WriteLine out when condition is false.
         /// </param>
         /// <param name="name">
         /// If specified, the created operation in the graph will be this one, otherwise it will be named 'Assert'.
         /// </param>
         /// <param name="summarize">
-        ///    Print this many entries of each tensor.
+        ///    Console.WriteLine this many entries of each tensor.
         /// </param>
         /// <returns>
         ///    Returns the description of the operation
         /// </returns>
         /// <remarks>
-        ///    If <c>condition</c> evaluates to false, print the list of tensors in <c>data</c>.
-        ///    <c>summarize</c> determines how many entries of the tensors to print.
+        ///    If <c>condition</c> evaluates to false, Console.WriteLine the list of tensors in <c>data</c>.
+        ///    <c>summarize</c> determines how many entries of the tensors to Console.WriteLine.
         /// </remarks>
         public static Operation assert (Tensor condition, Tensor[] data, int? summarize = null, string name = "Assert")
         {
@@ -2191,7 +2191,7 @@ namespace Tensorflow.Operations
         /// <remarks>
         ///    Spectrograms are a standard way of representing audio information as a series of
         ///    slices of frequency information, one slice for each window of time. By joining
-        ///    these together into a sequence, they form a distinctive fingerprint of the sound
+        ///    these together into a sequence, they form a distinctive fingerConsole.WriteLine of the sound
         ///    over time.
         ///    
         ///    This op expects to receive audio data as an input, stored as floats in the range
@@ -20419,7 +20419,7 @@ namespace Tensorflow.Operations
         /// If specified, the created operation in the graph will be this one, otherwise it will be named 'PreventGradient'.
         /// </param>
         /// <param name="message">
-        ///    Will be printed in the error when anyone tries to differentiate
+        ///    Will be Console.WriteLineed in the error when anyone tries to differentiate
         ///    this operation.
         /// </param>
         /// <returns>
@@ -20446,16 +20446,16 @@ namespace Tensorflow.Operations
         }
 
         /// <summary>
-        ///    Prints a list of tensors.
+        ///    Console.WriteLines a list of tensors.
         /// </summary>
         /// <param name="input">
         ///    The tensor passed to <c>output</c>
         /// </param>
         /// <param name="data">
-        ///    A list of tensors to print out when op is evaluated.
+        ///    A list of tensors to Console.WriteLine out when op is evaluated.
         /// </param>
         /// <param name="name">
-        /// If specified, the created operation in the graph will be this one, otherwise it will be named 'Print'.
+        /// If specified, the created operation in the graph will be this one, otherwise it will be named 'Console.WriteLine'.
         /// </param>
         /// <param name="message">
         ///    A string, prefix of the error message.
@@ -20464,16 +20464,16 @@ namespace Tensorflow.Operations
         ///    Only log <c>first_n</c> number of times. -1 disables logging.
         /// </param>
         /// <param name="summarize">
-        ///    Only print this many entries of each tensor.
+        ///    Only Console.WriteLine this many entries of each tensor.
         /// </param>
         /// <returns>
         ///    = The unmodified <c>input</c> tensor
         ///    The Operation can be fetched from the resulting Tensor, by fetching the Operation property from the result.
         /// </returns>
         /// <remarks>
-        ///    Passes <c>input</c> through to <c>output</c> and prints <c>data</c> when evaluating.
+        ///    Passes <c>input</c> through to <c>output</c> and Console.WriteLines <c>data</c> when evaluating.
         /// </remarks>
-        public static Tensor print (Tensor input, Tensor[] data, string message = null, int? first_n = null, int? summarize = null, string name = "Print")
+        public static Tensor Console.WriteLine (Tensor input, Tensor[] data, string message = null, int? first_n = null, int? summarize = null, string name = "Console.WriteLine")
         {
             var dict = new Dictionary<string, object>();
             dict["input"] = input;
@@ -20484,7 +20484,7 @@ namespace Tensorflow.Operations
                 dict["first_n"] = first_n.Value;
             if (summarize.HasValue)
                 dict["summarize"] = summarize.Value;
-            var op = _op_def_lib._apply_op_helper("Print", name: name, keywords: dict);
+            var op = _op_def_lib._apply_op_helper("Console.WriteLine", name: name, keywords: dict);
             return op.output;
         }
 
@@ -24670,10 +24670,10 @@ namespace Tensorflow.Operations
         ///    To guarantee an output range, for example <c>[0.0, 1.0]</c>, apply
         ///    <c>tf.clip_by_value</c> to the output.
         ///    
-        ///    Each output pixel is computed by first transforming the pixel's footprint into
-        ///    the input tensor and then averaging the pixels that intersect the footprint. An
+        ///    Each output pixel is computed by first transforming the pixel's footConsole.WriteLine into
+        ///    the input tensor and then averaging the pixels that intersect the footConsole.WriteLine. An
         ///    input pixel's contribution to the average is weighted by the fraction of its
-        ///    area that intersects the footprint.  This is the same as OpenCV's INTER_AREA.
+        ///    area that intersects the footConsole.WriteLine.  This is the same as OpenCV's INTER_AREA.
         /// </remarks>
         public static Tensor resize_area (Tensor images, Tensor size, bool? align_corners = null, string name = "ResizeArea")
         {
@@ -26133,7 +26133,7 @@ namespace Tensorflow.Operations
         ///    updates = tf.constant([9, 10, 11, 12])
         ///    update = tf.scatter_nd_add(ref, indices, updates)
         ///    with tf.Session() as sess:
-        ///    print sess.run(update)
+        ///    Console.WriteLine sess.run(update)
         ///   </code>
         ///    
         ///    The resulting update to ref would look like this:
@@ -26207,7 +26207,7 @@ namespace Tensorflow.Operations
         ///    updates = tf.constant([9, 10, 11, 12])
         ///    update = tf.scatter_nd_update(ref, indices, updates)
         ///    with tf.Session() as sess:
-        ///    print sess.run(update)
+        ///    Console.WriteLine sess.run(update)
         ///   </code>
         ///    
         ///    The resulting update to ref would look like this:
@@ -28449,7 +28449,7 @@ namespace Tensorflow.Operations
         ///    shape = tf.constant([8])
         ///    scatter = tf.scatter_nd(indices, updates, shape)
         ///    with tf.Session() as sess:
-        ///    print(sess.run(scatter))
+        ///    Console.WriteLine(sess.run(scatter))
         ///   </code>
         ///    
         ///    The resulting tensor would look like this:
@@ -28475,7 +28475,7 @@ namespace Tensorflow.Operations
         ///    shape = tf.constant([4, 4, 4])
         ///    scatter = tf.scatter_nd(indices, updates, shape)
         ///    with tf.Session() as sess:
-        ///    print(sess.run(scatter))
+        ///    Console.WriteLine(sess.run(scatter))
         ///   </code>
         ///    
         ///    The resulting tensor would look like this:
@@ -28549,7 +28549,7 @@ namespace Tensorflow.Operations
         ///    updates = tf.constant([9, 10, 11, 12])
         ///    add = tf.scatter_nd_add(ref, indices, updates)
         ///    with tf.Session() as sess:
-        ///    print sess.run(add)
+        ///    Console.WriteLine sess.run(add)
         ///    
         ///    The resulting update to ref would look like this:
         ///    
@@ -28619,7 +28619,7 @@ namespace Tensorflow.Operations
         ///    updates = tf.constant([9, 10, 11, 12])
         ///    output = tf.scatter_nd_non_aliasing_add(input, indices, updates)
         ///    with tf.Session() as sess:
-        ///    print(sess.run(output))
+        ///    Console.WriteLine(sess.run(output))
         ///    
         ///    The resulting value <c>output</c> would look like this:
         ///    
@@ -28688,7 +28688,7 @@ namespace Tensorflow.Operations
         ///    updates = tf.constant([9, 10, 11, 12])
         ///    sub = tf.scatter_nd_sub(ref, indices, updates)
         ///    with tf.Session() as sess:
-        ///    print sess.run(sub)
+        ///    Console.WriteLine sess.run(sub)
         ///    
         ///    The resulting update to ref would look like this:
         ///    
@@ -28761,7 +28761,7 @@ namespace Tensorflow.Operations
         ///    updates = tf.constant([9, 10, 11, 12])
         ///    update = tf.scatter_nd_update(ref, indices, updates)
         ///    with tf.Session() as sess:
-        ///    print sess.run(update)
+        ///    Console.WriteLine sess.run(update)
         ///   </code>
         ///    
         ///    The resulting update to ref would look like this:
@@ -28911,24 +28911,24 @@ namespace Tensorflow.Operations
         }
 
         /// <summary>
-        ///    Computes fingerprints of the input strings.
+        ///    Computes fingerConsole.WriteLines of the input strings.
         /// </summary>
         /// <param name="input">
-        ///    vector of strings to compute fingerprints on.
+        ///    vector of strings to compute fingerConsole.WriteLines on.
         /// </param>
         /// <param name="name">
-        /// If specified, the created operation in the graph will be this one, otherwise it will be named 'SdcaFprint'.
+        /// If specified, the created operation in the graph will be this one, otherwise it will be named 'SdcaFConsole.WriteLine'.
         /// </param>
         /// <returns>
         ///    a (N,2) shaped matrix where N is the number of elements in the input
-        ///    vector. Each row contains the low and high parts of the fingerprint.
+        ///    vector. Each row contains the low and high parts of the fingerConsole.WriteLine.
         ///    The Operation can be fetched from the resulting Tensor, by fetching the Operation property from the result.
         /// </returns>
-        public static Tensor sdca_fprint (Tensor input, string name = "SdcaFprint")
+        public static Tensor sdca_fConsole.WriteLine (Tensor input, string name = "SdcaFConsole.WriteLine")
         {
             var dict = new Dictionary<string, object>();
             dict["input"] = input;
-            var op = _op_def_lib._apply_op_helper("SdcaFprint", name: name, keywords: dict);
+            var op = _op_def_lib._apply_op_helper("SdcaFConsole.WriteLine", name: name, keywords: dict);
             return op.output;
         }
 
@@ -29717,7 +29717,7 @@ namespace Tensorflow.Operations
         }
 
         /// <summary>
-        ///    Generate a sharded filename. The filename is printf formatted as
+        ///    Generate a sharded filename. The filename is Console.WriteLinef formatted as
         /// </summary>
         /// <param name="basename">
         /// </param>
@@ -31780,8 +31780,8 @@ namespace Tensorflow.Operations
         /// </param>
         /// <param name="hash_key">
         ///    Optional argument
-        ///    Specify the hash_key that will be used by the <c>FingerprintCat64</c>
-        ///    function to combine the crosses fingerprints.
+        ///    Specify the hash_key that will be used by the <c>FingerConsole.WriteLineCat64</c>
+        ///    function to combine the crosses fingerConsole.WriteLines.
         /// </param>
         /// <param name="out_type">
         ///    Optional argument
@@ -31825,15 +31825,15 @@ namespace Tensorflow.Operations
         ///    if hashed_output=true then the output will be
         ///    
         ///    shape = [2, 2]
-        ///    [0, 0]: FingerprintCat64(
-        ///    Fingerprint64("f"), FingerprintCat64(
-        ///    Fingerprint64("d"), Fingerprint64("a")))
-        ///    [1, 0]: FingerprintCat64(
-        ///    Fingerprint64("g"), FingerprintCat64(
-        ///    Fingerprint64("e"), Fingerprint64("b")))
-        ///    [1, 1]: FingerprintCat64(
-        ///    Fingerprint64("g"), FingerprintCat64(
-        ///    Fingerprint64("e"), Fingerprint64("c")))
+        ///    [0, 0]: FingerConsole.WriteLineCat64(
+        ///    FingerConsole.WriteLine64("f"), FingerConsole.WriteLineCat64(
+        ///    FingerConsole.WriteLine64("d"), FingerConsole.WriteLine64("a")))
+        ///    [1, 0]: FingerConsole.WriteLineCat64(
+        ///    FingerConsole.WriteLine64("g"), FingerConsole.WriteLineCat64(
+        ///    FingerConsole.WriteLine64("e"), FingerConsole.WriteLine64("b")))
+        ///    [1, 1]: FingerConsole.WriteLineCat64(
+        ///    FingerConsole.WriteLine64("g"), FingerConsole.WriteLineCat64(
+        ///    FingerConsole.WriteLine64("e"), FingerConsole.WriteLine64("c")))
         /// </remarks>
         public static (Tensor output_indices, Tensor output_values, Tensor output_shape) sparse_cross (Tensor[] indices, Tensor[] values, Tensor[] shapes, Tensor[] dense_inputs, bool hashed_output, int num_buckets, int hash_key, TF_DataType out_type, TF_DataType internal_type, string name = "SparseCross")
         {

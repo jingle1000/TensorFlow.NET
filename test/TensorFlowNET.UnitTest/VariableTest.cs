@@ -141,7 +141,7 @@ namespace TensorFlowNET.UnitTest
                 {
                     x = x + 1;
                     result = session.run(x);
-                    print(result);
+                    Console.WriteLine(result);
                 }
             }
 

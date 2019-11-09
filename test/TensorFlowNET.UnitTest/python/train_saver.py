@@ -23,4 +23,4 @@ with tf.Session() as sess:
   dec_v2.op.run()
   # Save the variables to disk.
   save_path = saver.save(sess, "/tmp/model.ckpt")
-  print("Model saved in path: %s" % save_path)
+  Console.WriteLine("Model saved in path: %s" % save_path)

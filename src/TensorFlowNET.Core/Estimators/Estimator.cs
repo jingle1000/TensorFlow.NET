@@ -46,7 +46,7 @@ namespace Tensorflow.Estimators
             }
 
             var loss = _train_model(input_fn);
-            print($"Loss for final step: {loss}.");
+            Console.WriteLine($"Loss for final step: {loss}.");
             return this;
         }
 

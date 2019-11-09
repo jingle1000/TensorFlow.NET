@@ -618,7 +618,7 @@ namespace Tensorflow {
         private bool deprecated_;
         /// <summary>
         /// Set if this endpoint is deprecated. If set to true, a message suggesting
-        /// to use a non-deprecated endpoint instead will be printed. If all
+        /// to use a non-deprecated endpoint instead will be Console.WriteLineed. If all
         /// endpoints are deprecated, set deprecation_message in ApiDef instead.
         /// </summary>
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute]

@@ -152,7 +152,7 @@ namespace Tensorflow
         /// If specified, the created operation in the graph will be this one, otherwise it will be named 'PreventGradient'.
         /// </param>
         /// <param name="message">
-        ///    Will be printed in the error when anyone tries to differentiate
+        ///    Will be Console.WriteLineed in the error when anyone tries to differentiate
         ///    this operation.
         /// </param>
         /// <returns>
